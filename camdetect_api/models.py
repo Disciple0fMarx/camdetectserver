@@ -22,12 +22,12 @@ class AIObject(models.Model):
 
 
 class Thing(AIObject):  # YOLOv5
-    image = models.ImageField(upload_to='uploads/things')
+    image = models.ImageField(upload_to='uploads/things', blank=True, null=True)
 
 
 class Face(AIObject):
-    image = models.ImageField(upload_to='uploads/faces')
+    image = models.ImageField(upload_to='uploads/faces', blank=True, null=True)
 
 
 class LicensePlate(AIObject):
-    image = models.ImageField(upload_to='uploads/license_plates')
+    image = models.ImageField(upload_to='uploads/license_plates', blank=True, null=True)
