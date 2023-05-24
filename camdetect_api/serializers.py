@@ -1,18 +1,12 @@
 from rest_framework import serializers
 from .models import (
-    Thing,
     Face,
     LicensePlate,
 
+    ObjectPrediction,
     FacePrediction,
     LicensePlatePrediction
 )
-
-
-class ThingSerializer(serializers.ModelSerializer):  # YOLOv5
-    class Meta:
-        model = Thing
-        fields = ['title', 'timestamp', 'image']
 
 
 class FaceSerializer(serializers.ModelSerializer):
@@ -27,15 +21,21 @@ class LicensePlateSerializer(serializers.ModelSerializer):
         fields = ['title', 'timestamp', 'image']
 
 
+class ObjectPredictionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ObjectPrediction
+        fields = ['inference_image', 'timestamp', 'result']
+
+
 class FacePredictionSerializer(serializers.ModelSerializer):
     face = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = FacePrediction
-        fields = ['inference_image', 'result', 'face']
+        fields = ['inference_image', 'timestamp', 'result', 'face']
 
 
 class LicensePlatePredictionSerializer(serializers.ModelSerializer):
     license_plate = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = LicensePlatePrediction
-        fields = ['inference_image', 'result', 'license_plate']
+        fields = ['inference_image', 'timestamp', 'result', 'license_plate']

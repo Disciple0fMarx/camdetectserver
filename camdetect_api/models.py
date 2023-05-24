@@ -20,10 +20,6 @@ class AIObject(models.Model):
         pass
 
 
-class Thing(AIObject):  # YOLOv5
-    image = models.ImageField(upload_to='uploads/things', blank=True, null=True)
-
-
 class Face(AIObject):
     image = models.ImageField(upload_to='uploads/faces', blank=True, null=True)
 
@@ -34,10 +30,14 @@ class LicensePlate(AIObject):
 
 class Prediction(models.Model):
     inference_image = models.ImageField(upload_to='uploads/predictions', blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     result = models.CharField(max_length=50, blank=True, null=True)
-
     class Meta:
         abstract = True
+
+
+class ObjectPrediction(Prediction):
+    pass
 
 
 class FacePrediction(Prediction):

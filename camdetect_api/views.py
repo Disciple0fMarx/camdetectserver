@@ -4,16 +4,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
 from .models import (
-    Thing,
     Face,
     LicensePlate,
+    ObjectPrediction,
     FacePrediction,
     LicensePlatePrediction
 )
 from .serializers import (
-    ThingSerializer,
     FaceSerializer,
     LicensePlateSerializer,
+    ObjectPredictionSerializer,
     FacePredictionSerializer,
     LicensePlatePredictionSerializer
 )
@@ -23,30 +23,6 @@ from .serializers import (
 
 
 # List views
-class ThingList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
-    def get(self, request, *args, **kwargs):
-        '''List all the Thing items.'''
-        things = Thing.objects.all()
-        serializer = ThingSerializer(things, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    def post(self, request, *args, **kwargs):
-        '''Create the Thing with the given Thing data.'''
-        data = {
-            'title': request.data.get('title'),
-            'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
-        }
-        serializer = ThingSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class FaceList(APIView):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -54,7 +30,7 @@ class FaceList(APIView):
     def get(self, request, *args, **kwargs):
         '''List all the Face items.'''
         faces = Face.objects.all()
-        serializer = ThingSerializer(faces, many=True)
+        serializer = FaceSerializer(faces, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request, *args, **kwargs):
@@ -95,6 +71,30 @@ class LicensePlateList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ObjectPredictionList(APIView):
+    # add permission to check if user is authenticated
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get(self, request, *args, **kwargs):
+        '''List all the ObjectPrediction items for the given requested object prediction.'''
+        object_predictions = ObjectPrediction.objects.all()
+        serializer = ObjectPredictionSerializer(object_predictions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request, *args, **kwargs):
+        '''Create the ObjectPrediction with the given ObjectPrediction data.'''
+        data = {
+            'inference_image': request.data.get('inference_image'),
+            'timestamp': request.data.get('timestamp'),
+            'result': request.data.get('result')
+        }
+        serializer = ObjectPredictionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class FacePredictionList(APIView):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -109,8 +109,8 @@ class FacePredictionList(APIView):
         '''Create the FacePrediction with the given FacePrediction data.'''
         data = {
             'inference_image': request.data.get('inference_image'),
+            'timestamp': request.data.get('timestamp'),
             'result': request.data.get('result'),
-            'face': request.data.get('face')
         }
         serializer = FacePredictionSerializer(data=data)
         if serializer.is_valid():
@@ -133,6 +133,7 @@ class LicensePlatePredictionList(APIView):
         '''Create the LicensePlatePrediction with the given LicensePlatePrediction data.'''
         data = {
             'inference_image': request.data.get('inference_image'),
+            'timestamp': request.data.get('timestamp'),
             'result': request.data.get('result'),
             'license_plate': request.data.get('license_plate')
         }
@@ -144,62 +145,6 @@ class LicensePlatePredictionList(APIView):
 
 
 # Detail views
-class ThingDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def get_object(self, thing_id):
-        '''Helper method to get the object with the given thing_id.'''
-        try:
-            return Thing.objects.get(id=thing_id)
-        except Thing.DoesNotExist:
-            return None
-
-    def get(self, request, thing_id, *args, **kwargs):
-        '''Retrieves the Thing with given thing_id.'''
-        thing_instance = self.get_object(thing_id)
-        if not thing_instance:
-            return Response(
-                {'res': 'Object with thing_id does not exist.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        serializer = ThingSerializer(thing_instance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, thing_id, *args, **kwargs):
-        '''Updates the Thing item with the given thing_id if it exists.'''
-        thing_instance = self.get_object(thing_id)
-        if not thing_instance:
-            return Response(
-                {'res': 'Object with thing_id does not exist.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        data = {
-            'title': request.data.get('title'),
-            'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
-        }
-        serializer = ThingSerializer(instance=thing_instance, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, thing_id, *args, **kwargs):
-        '''Deletes the Thing item with the given thing_id if it exists.'''
-        thing_instance = self.get_object(thing_id)
-        if not thing_instance:
-            return Response(
-                {'res': 'Object with thing_id does not exist.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        thing_instance.delete()
-        return Response(
-            {'res': 'Object deleted!'},
-            status=status.HTTP_200_OK
-        )
-
-
 class FaceDetail(APIView):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -235,7 +180,7 @@ class FaceDetail(APIView):
             'timestamp': request.data.get('timestamp'),
             'image': request.data.get('image')
         }
-        serializer = ThingSerializer(instance=face_instance, data=data, partial=True)
+        serializer = FaceSerializer(instance=face_instance, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -306,6 +251,63 @@ class LicensePlateDetail(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         license_plate_instance.delete()
+        return Response(
+            {'res': 'Object deleted!'},
+            status=status.HTTP_200_OK
+        )
+
+
+class ObjectPredictionDetail(APIView):
+    # add permission to check if user is authenticated
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self, object_prediction_id):
+        '''Helper method to get the object with the given object_prediction_id.'''
+        try:
+            return ObjectPrediction.objects.get(id=object_prediction_id)
+        except ObjectPrediction.DoesNotExist:
+            return None
+    
+    def get(self, request, object_prediction_id, *args, **kwargs):
+        '''Retrieves the Prediction with the given object_prediction_id.'''
+        object_prediction_instance = self.get_object(object_prediction_id)
+        if not object_prediction_instance:
+            return Response(
+                {'res': 'Object with object_prediction_id does not exist.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ObjectPredictionSerializer(object_prediction_instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, object_prediction_id, *args, **kwargs):
+        '''Updates the ObjectPrediction item with the given object_prediction_id if it exists.'''
+        object_prediction_instance = self.get_object(object_prediction_id)
+        if not object_prediction_instance:
+            return Response(
+                {'res': 'Object with object_prediction_id does not exist.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        data = {
+            'inference_image': request.data.get('inference_image'),
+            'timestamp': request.data.get('timestamp'),
+            'result': request.data.get('result')
+        }
+        serializer = ObjectPredictionSerializer(instance=object_prediction_instance, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, object_prediction_id, *args, **kwargs):
+        '''Deletes the ObjectPrediction item with the given object_prediction_id if it exists.'''
+        object_prediction_instance = self.get_object(object_prediction_id)
+        if not object_prediction_instance:
+            return Response(
+                {'res': 'Object with object_prediction_id does not exist.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        object_prediction_instance.delete()
         return Response(
             {'res': 'Object deleted!'},
             status=status.HTTP_200_OK

@@ -1,13 +1,13 @@
 from django.urls import path, include, re_path
 from .views import (
-    ThingList,
-    ThingDetail,
-
     FaceList,
     FaceDetail,
 
     LicensePlateList,
     LicensePlateDetail,
+
+    ObjectPredictionList,
+    ObjectPredictionDetail,
 
     FacePredictionList,
     FacePredictionDetail,
@@ -17,14 +17,14 @@ from .views import (
 )
 
 urlpatterns = [
-    path('api/thing', ThingList.as_view()),
-    path('api/thing/<int:thing_id>/', ThingDetail.as_view()),
-
     path('api/face', FaceList.as_view()),
     path('api/face/<int:face_id>/', FaceDetail.as_view()),
 
     path('api/license-plate', LicensePlateList.as_view()),
     path('api/license-plate/<int:license_plate_id>/', LicensePlateDetail.as_view()),
+
+    path('api/object-prediction', ObjectPredictionList.as_view()),
+    path('api/object-prediction/<int:object_prediction_id>/', ObjectPredictionDetail.as_view()),
 
     path('api/face-prediction', FacePredictionList.as_view()),
     path('api/face-prediction/<int:face_prediction_id>/', FacePredictionDetail.as_view()),
