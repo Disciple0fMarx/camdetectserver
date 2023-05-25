@@ -24,8 +24,8 @@ from .serializers import (
 
 # List views
 class FaceList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get(self, request, *args, **kwargs):
         '''List all the Face items.'''
@@ -48,8 +48,8 @@ class FaceList(APIView):
 
 
 class LicensePlateList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get(self, request, *args, **kwargs):
         '''List all the LicensePlate items.'''
@@ -72,8 +72,8 @@ class LicensePlateList(APIView):
 
 
 class ObjectPredictionList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get(self, request, *args, **kwargs):
         '''List all the ObjectPrediction items for the given requested object prediction.'''
@@ -96,8 +96,8 @@ class ObjectPredictionList(APIView):
 
 
 class FacePredictionList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get(self, request, *args, **kwargs):
         '''List all the FacePrediction items for the given requested face.'''
@@ -120,8 +120,8 @@ class FacePredictionList(APIView):
 
 
 class LicensePlatePredictionList(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def get(self, request, *args, **kwargs):
         '''List all the LicensePlatePrediction items for the given requested license plate.'''
@@ -146,8 +146,8 @@ class LicensePlatePredictionList(APIView):
 
 # Detail views
 class FaceDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, face_id):
         '''Helper method to get the object with the given face_id.'''
@@ -202,8 +202,8 @@ class FaceDetail(APIView):
 
 
 class LicensePlateDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, license_plate_id):
         '''Helper method to get the object with the given license_plate_id.'''
@@ -258,8 +258,8 @@ class LicensePlateDetail(APIView):
 
 
 class ObjectPredictionDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, object_prediction_id):
         '''Helper method to get the object with the given object_prediction_id.'''
@@ -315,8 +315,8 @@ class ObjectPredictionDetail(APIView):
 
 
 class FacePredictionDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, face_prediction_id):
         '''Helper method to get the object with the given face_prediction_id.'''
@@ -372,8 +372,8 @@ class FacePredictionDetail(APIView):
 
 
 class LicensePlatePredictionDetail(APIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    # # add permission to check if user is authenticated
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, license_plate_prediction_id):
         '''Helper method to get the object with the given license_plate_prediction_id.'''
