@@ -1,4 +1,6 @@
 # from django.shortcuts import render
+from django.http import QueryDict
+from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -26,6 +28,8 @@ from .serializers import (
 class FaceList(APIView):
     # # add permission to check if user is authenticated
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser]
+ 
     
     def get(self, request, *args, **kwargs):
         '''List all the Face items.'''
@@ -38,7 +42,7 @@ class FaceList(APIView):
         data = {
             'title': request.data.get('title'),
             'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
+            'image': request.FILES['image']
         }
         serializer = FaceSerializer(data=data)
         if serializer.is_valid():
@@ -62,7 +66,7 @@ class LicensePlateList(APIView):
         data = {
             'title': request.data.get('title'),
             'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
+            'image': request.FILES['image']
         }
         serializer = LicensePlateSerializer(data=data)
         if serializer.is_valid():
@@ -86,7 +90,7 @@ class ObjectPredictionList(APIView):
         data = {
             'inference_image': request.data.get('inference_image'),
             'timestamp': request.data.get('timestamp'),
-            'result': request.data.get('result')
+            'image': request.FILES['image']
         }
         serializer = ObjectPredictionSerializer(data=data)
         if serializer.is_valid():
@@ -108,7 +112,7 @@ class FacePredictionList(APIView):
     def post(self, request, *args, **kwargs):
         '''Create the FacePrediction with the given FacePrediction data.'''
         data = {
-            'inference_image': request.data.get('inference_image'),
+            'inference_image': request.FILES('inference_image'),
             'timestamp': request.data.get('timestamp'),
             'result': request.data.get('result'),
         }
@@ -132,7 +136,7 @@ class LicensePlatePredictionList(APIView):
     def post(self, request, *args, **kwargs):
         '''Create the LicensePlatePrediction with the given LicensePlatePrediction data.'''
         data = {
-            'inference_image': request.data.get('inference_image'),
+            'inference_image': request.FILES('inference_image'),
             'timestamp': request.data.get('timestamp'),
             'result': request.data.get('result'),
             'license_plate': request.data.get('license_plate')
@@ -178,7 +182,7 @@ class FaceDetail(APIView):
         data = {
             'title': request.data.get('title'),
             'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
+            'image': request.FILES('image')
         }
         serializer = FaceSerializer(instance=face_instance, data=data, partial=True)
         if serializer.is_valid():
@@ -234,7 +238,7 @@ class LicensePlateDetail(APIView):
         data = {
             'title': request.data.get('title'),
             'timestamp': request.data.get('timestamp'),
-            'image': request.data.get('image')
+            'image': request.FILES('image')
         }
         serializer = LicensePlateSerializer(instance=license_plate_instance, data=data, partial=True)
         if serializer.is_valid():
@@ -289,7 +293,7 @@ class ObjectPredictionDetail(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         data = {
-            'inference_image': request.data.get('inference_image'),
+            'inference_image': request.FILES('inference_image'),
             'timestamp': request.data.get('timestamp'),
             'result': request.data.get('result')
         }
@@ -346,7 +350,7 @@ class FacePredictionDetail(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         data = {
-            'inference_image': request.data.get('inference_image'),
+            'inference_image': request.FILES('inference_image'),
             'result': request.data.get('result'),
             'face': request.data.get('face')
         }
@@ -403,7 +407,7 @@ class LicensePlatePredictionDetail(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         data = {
-            'inference_image': request.data.get('inference_image'),
+            'inference_image': request.FILES('inference_image'),
             'result': request.data.get('result'),
             'license_plate': request.data.get('license_plate')
         }
