@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
 from .models import (
     Face,
     LicensePlate,
@@ -19,12 +21,15 @@ from .serializers import (
     FacePredictionSerializer,
     LicensePlatePredictionSerializer
 )
+from camdetect_api.ai_models.src.face_predict import FaceRecognition
+# from camdetect_api.ai_models.src.license_plate_predict import PlateReader
 
 
 # Create your views here.
 
 
 # List views
+
 class FaceList(APIView):
     # # add permission to check if user is authenticated
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -113,11 +118,21 @@ class FacePredictionList(APIView):
     
     def post(self, request, *args, **kwargs):
         '''Create the FacePrediction with the given FacePrediction data.'''
+        inference_image = request.FILES['inference_image']
+        # Perform face recognition on the inference image and get the result
+        fr = FaceRecognition()
+        result = fr.recognize_from_image(inference_image)
+        # Find the matching face
+        if result == 'Unknown':
+            face = 0
+        else:
+            matching_face = get_object_or_404(Face, image='uploads/faces/'+result)
+            face = matching_face.id
         data = {
-            'inference_image': request.FILES['inference_image'],
+            'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
-            'result': request.data.get('result'),
-            'face': request.data.get('face')
+            'result': result,
+            'face': face
         }
         serializer = FacePredictionSerializer(data=data)
         if serializer.is_valid():
@@ -153,6 +168,7 @@ class LicensePlatePredictionList(APIView):
 
 
 # Detail views
+
 class FaceDetail(APIView):
     # # add permission to check if user is authenticated
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -441,3 +457,22 @@ class LicensePlatePredictionDetail(APIView):
             {'res': 'Object deleted!'},
             status=status.HTTP_200_OK
         )
+
+
+# AI Operations
+
+# @csrf_exempt
+# def predict_face(request):
+#     if request.method == 'POST':
+#         inference_image = request.FILES.get('inference_image')
+
+#         # Perform face recognition on the inference image and get the result
+#         fr = FaceRecognition()
+#         result = fr.recognize_from_image(inference_image)
+#         # Find the matching face
+#         matching_face = get_object_or_404(Face, image='uploads/faces/'+result)
+#         face = matching_face.id
+
+#         # Create a new FacePrediction instance with the result and save it to the database
+#         face_prediction = FacePrediction(inference_image=inference_image, result=result, face=face)
+#         face_prediction.save()

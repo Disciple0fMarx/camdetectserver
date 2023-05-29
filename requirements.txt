@@ -1,0 +1,6 @@
+django_rest_framework
+face_recognition
+opencv-python
+numpy
+torch
+torchvision

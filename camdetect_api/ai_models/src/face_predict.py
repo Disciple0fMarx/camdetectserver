@@ -19,6 +19,7 @@ def face_confidence(face_distance, face_match_threshold=0.6):
 
 
 class FaceRecognition:
+    FACES_DIR = 'uploads/faces'
     face_locations = []
     face_encodings = []
     face_names = []
@@ -26,8 +27,8 @@ class FaceRecognition:
     known_face_names = []
     process_current_frame = True
 
-    def __init__(self, faces_dir: str):
-        self.encode_faces(faces_dir)
+    def __init__(self):
+        self.encode_faces(self.FACES_DIR)
 
     def encode_faces(self, faces_dir: str):
         for image in os.listdir(faces_dir):
@@ -52,7 +53,6 @@ class FaceRecognition:
             # See if the face is a match for the known face(s)
             matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
             name = "Unknown"
-            confidence = '???'
 
             # Calculate the shortest distance to face
             face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
@@ -60,16 +60,6 @@ class FaceRecognition:
             best_match_index = np.argmin(face_distances)
             if matches[best_match_index]:
                 name = self.known_face_names[best_match_index]
-                confidence = face_confidence(face_distances[best_match_index])
 
-            self.face_names.append(f'{name} ({confidence})')
+            self.face_names.append(name)
             return ', '.join(self.face_names)
-
-
-def main():
-    fr = FaceRecognition('/home/dhya/Repos/webcam_face_recognition/faces')
-    print(fr.recognize_from_image('/home/dhya/Downloads/dhya_test.jpg'))
-
-
-if __name__ == '__main__':
-    main()
