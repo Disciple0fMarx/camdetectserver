@@ -21,6 +21,18 @@ def predict_image(model, image_path):
     return pred_classes, pred_confidence
 
 
+def perform_object_prediction(image_path: str) -> str:
+    # Load YOLOv5 model
+    model = load_model('yolov5s.pt')
+    pred_classes, pred_confidence = predict_image(model, image_path)
+    # Format the results
+    results = []
+    for pred_class, confidence in zip(pred_classes, pred_confidence):
+        results.append(f'{pred_class} ({confidence * 100:.2f}%)')
+    return ', '.join(results)
+
+
+
 def main():
     # Load YOLOv5 model
     model = load_model('yolov5s.pt')

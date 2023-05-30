@@ -1,12 +1,13 @@
 # from django.shortcuts import render
-from django.http import QueryDict
+import os
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.conf import settings
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import get_object_or_404
 from .models import (
     Face,
     LicensePlate,
@@ -21,6 +22,7 @@ from .serializers import (
     FacePredictionSerializer,
     LicensePlatePredictionSerializer
 )
+from camdetect_api.ai_models.src.object_predict import perform_object_prediction
 from camdetect_api.ai_models.src.face_predict import FaceRecognition
 # from camdetect_api.ai_models.src.license_plate_predict import PlateReader
 
@@ -93,10 +95,15 @@ class ObjectPredictionList(APIView):
     
     def post(self, request, *args, **kwargs):
         '''Create the ObjectPrediction with the given ObjectPrediction data.'''
+        inference_image = request.FILES['inference_image']
+        path = default_storage.save('tmp/' + str(inference_image), ContentFile(inference_image.read()))
+        tmp_file = os.path.join(settings.MEDIA_ROOT, path)
+        # Perform object detection on the inference image and get the result
+        result = perform_object_prediction(tmp_file)
         data = {
-            'inference_image': request.FILES['inference_image'],
+            'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
-            'result': request.data.get('result')
+            'result': result
         }
         serializer = ObjectPredictionSerializer(data=data)
         if serializer.is_valid():
@@ -119,14 +126,18 @@ class FacePredictionList(APIView):
     def post(self, request, *args, **kwargs):
         '''Create the FacePrediction with the given FacePrediction data.'''
         inference_image = request.FILES['inference_image']
+        path = default_storage.save('tmp/' + str(inference_image), ContentFile(inference_image.read()))
+        tmp_file = os.path.join(settings.MEDIA_ROOT, path)
         # Perform face recognition on the inference image and get the result
         fr = FaceRecognition()
-        result = fr.recognize_from_image(inference_image)
+        result = fr.recognize_from_image(tmp_file)
+        path = default_storage.delete(tmp_file)
         # Find the matching face
         if result == 'Unknown':
             face = 0
         else:
-            matching_face = get_object_or_404(Face, image='uploads/faces/'+result)
+            image_path = os.path.join(settings.MEDIA_ROOT, 'faces', result)
+            matching_face = Face.objects.filter(image=image_path).all()
             face = matching_face.id
         data = {
             'inference_image': inference_image,

@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import math
 from PIL import Image
+from django.conf import settings
 
 
 # Helper
@@ -19,7 +20,7 @@ def face_confidence(face_distance, face_match_threshold=0.6):
 
 
 class FaceRecognition:
-    FACES_DIR = 'uploads/faces'
+    FACES_DIR = os.path.join(settings.MEDIA_ROOT, 'faces')
     face_locations = []
     face_encodings = []
     face_names = []
