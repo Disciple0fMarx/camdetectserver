@@ -21,15 +21,15 @@ class AIObject(models.Model):
 
 
 class Face(AIObject):
-    image = models.ImageField(upload_to='uploads/faces', blank=True, null=True)
+    image = models.ImageField(upload_to='faces', blank=True, null=True)
 
 
 class LicensePlate(AIObject):
-    image = models.ImageField(upload_to='uploads/license_plates', blank=True, null=True)
+    image = models.ImageField(upload_to='license_plates', blank=True, null=True)
 
 
 class Prediction(models.Model):
-    inference_image = models.ImageField(upload_to='uploads/predictions', blank=True, null=True)
+    inference_image = models.ImageField(upload_to='predictions', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     result = models.CharField(max_length=50, blank=True, null=True)
     class Meta:

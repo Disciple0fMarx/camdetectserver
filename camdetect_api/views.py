@@ -100,6 +100,8 @@ class ObjectPredictionList(APIView):
         tmp_file = os.path.join(settings.MEDIA_ROOT, path)
         # Perform object detection on the inference image and get the result
         result = perform_object_prediction(tmp_file)
+        print(result)
+        path = default_storage.delete(tmp_file)
         data = {
             'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),

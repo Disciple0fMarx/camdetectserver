@@ -4,3 +4,8 @@ opencv-python
 numpy
 torch
 torchvision
+pandas
+psutil
+pyyaml
+tqdm
+ultralytics

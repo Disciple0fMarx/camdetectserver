@@ -2,6 +2,9 @@ import torch
 import torchvision
 from PIL import Image
 
+MODEL_PATH = 'camdetect_api/ai_models/weights/yolov5s.pt'
+
+
 def load_model(model_path):
     # Load YOLOv5 model
     model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, device='cpu')
@@ -23,7 +26,7 @@ def predict_image(model, image_path):
 
 def perform_object_prediction(image_path: str) -> str:
     # Load YOLOv5 model
-    model = load_model('yolov5s.pt')
+    model = load_model(MODEL_PATH)
     pred_classes, pred_confidence = predict_image(model, image_path)
     # Format the results
     results = []
@@ -35,7 +38,7 @@ def perform_object_prediction(image_path: str) -> str:
 
 def main():
     # Load YOLOv5 model
-    model = load_model('yolov5s.pt')
+    model = load_model('weights/yolov5s.pt')
 
     # Predict on an image
     image_path = '/home/dhya/Downloads/airbud.jpg'
