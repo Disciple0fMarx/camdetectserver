@@ -96,21 +96,22 @@ class ObjectPredictionList(APIView):
     def post(self, request, *args, **kwargs):
         '''Create the ObjectPrediction with the given ObjectPrediction data.'''
         inference_image = request.FILES['inference_image']
-        path = default_storage.save('tmp/' + str(inference_image), ContentFile(inference_image.read()))
-        tmp_file = os.path.join(settings.MEDIA_ROOT, path)
-        # Perform object detection on the inference image and get the result
-        result = perform_object_prediction(tmp_file)
-        print(result)
-        path = default_storage.delete(tmp_file)
+        # path = default_storage.save('tmp/' + str(inference_image), ContentFile(inference_image.read()))
+        # tmp_file = os.path.join(settings.MEDIA_ROOT, path)
+        # # Perform object detection on the inference image and get the result
+        # result = perform_object_prediction(tmp_file)
+        # path = default_storage.delete(tmp_file)
         data = {
             'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
-            'result': result
+            'result': ''
         }
         serializer = ObjectPredictionSerializer(data=data)
-        if serializer.is_valid():
+        if serializer.is_valid():   
+            serializer.validated_data['result'] = perform_object_prediction(inference_image)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
