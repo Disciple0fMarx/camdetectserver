@@ -45,7 +45,8 @@ class FaceRecognition:
         # Resize image to 1/4 size for faster face recognition processing
         small_image = cv2.resize(image_array, (0, 0), fx=0.25, fy=0.25)
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_small_image = small_image[:, :, ::-1]
+        rgb_small_image = cv2.cvtColor(small_image, cv2.COLOR_BGR2RGB)
+        # rgb_small_image = small_image[:, :, ::-1]
         # Find all the faces and face encodings in the image
         self.face_locations = face_recognition.face_locations(rgb_small_image)
         self.face_encodings = face_recognition.face_encodings(rgb_small_image, self.face_locations)
