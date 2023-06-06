@@ -18,7 +18,7 @@ class FaceSerializer(serializers.ModelSerializer):
 class LicensePlateSerializer(serializers.ModelSerializer):
     class Meta:
         model = LicensePlate
-        fields = ['title', 'timestamp', 'image']
+        fields = ['title', 'timestamp', 'plate_text']
 
 
 class ObjectPredictionSerializer(serializers.ModelSerializer):

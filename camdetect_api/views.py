@@ -21,7 +21,7 @@ from .serializers import (
 )
 from camdetect_api.ai_models.src.object_predict import perform_object_prediction
 from camdetect_api.ai_models.src.face_predict import FaceRecognition
-# from camdetect_api.ai_models.src.license_plate_predict import PlateReader
+from camdetect_api.ai_models.src.license_plate_predict import PlateReader
 
 
 # Create your views here.
@@ -70,7 +70,7 @@ class LicensePlateList(APIView):
         data = {
             'title': request.data.get('title'),
             'timestamp': request.data.get('timestamp'),
-            'image': request.FILES['image']
+            'plate_text': request.data.get('plate_text')
         }
         serializer = LicensePlateSerializer(data=data)
         if serializer.is_valid():
@@ -121,19 +121,6 @@ class FacePredictionList(APIView):
     def post(self, request, *args, **kwargs):
         '''Create the FacePrediction with the given FacePrediction data.'''
         inference_image = request.FILES['inference_image']
-        # path = default_storage.save('tmp/' + str(inference_image), ContentFile(inference_image.read()))
-        # tmp_file = os.path.join(settings.MEDIA_ROOT, path)
-        # Perform face recognition on the inference image and get the result
-        # fr = FaceRecognition()
-        # result = fr.recognize_from_image(tmp_file)
-        # path = default_storage.delete(tmp_file)
-        # # Find the matching face
-        # if result == 'Unknown':
-        #     face = 0
-        # else:
-        #     image_path = os.path.join(settings.MEDIA_ROOT, 'faces', result)
-        #     matching_face = Face.objects.filter(image=image_path).all()
-        #     face = matching_face.id
         data = {
             'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
@@ -165,14 +152,18 @@ class LicensePlatePredictionList(APIView):
     
     def post(self, request, *args, **kwargs):
         '''Create the LicensePlatePrediction with the given LicensePlatePrediction data.'''
+        inference_image = request.FILES['inference_image']
         data = {
-            'inference_image': request.FILES['inference_image'],
+            'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
-            'result': request.data.get('result'),
-            'license_plate': request.data.get('license_plate')
+            'result': '',
+            'license_plate': 0
         }
         serializer = LicensePlatePredictionSerializer(data=data)
         if serializer.is_valid():
+            pr = PlateReader(inference_image)
+            result = pr.read()
+            serializer.validated_data['result'] = result
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -25,7 +25,7 @@ class Face(AIObject):
 
 
 class LicensePlate(AIObject):
-    image = models.ImageField(upload_to='license_plates', blank=True, null=True)
+    plate_text = models.TextField(max_length=100, blank=True, null=True)
 
 
 class Prediction(models.Model):
