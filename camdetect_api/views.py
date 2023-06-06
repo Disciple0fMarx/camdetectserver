@@ -57,7 +57,7 @@ class FaceList(APIView):
 class LicensePlateList(APIView):
     # # add permission to check if user is authenticated
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    parser_classes = [MultiPartParser]
+    # parser_classes = [MultiPartParser]
     
     def get(self, request, *args, **kwargs):
         '''List all the LicensePlate items.'''
@@ -163,7 +163,14 @@ class LicensePlatePredictionList(APIView):
         if serializer.is_valid():
             pr = PlateReader(inference_image)
             result = pr.read()
-            serializer.validated_data['result'] = result
+            matching_plate = pr.find_closest_match(result)
+            license_plate = 0 if matching_plate == None else matching_plate
+            if license_plate == 0:
+                serializer.validated_data['result'] = result
+            else: 
+                new_result = matching_plate.plate_text
+                serializer.validated_data['result'] = new_result
+            serializer.validated_data['license_plate'] = license_plate
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

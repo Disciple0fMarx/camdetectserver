@@ -6,10 +6,12 @@ import numpy as np
 import imutils
 import easyocr
 from PIL import Image
-from django.conf import settings
+from jellyfish import jaro_winkler
+from camdetect_api.models import LicensePlate
+from django.shortcuts import get_object_or_404
 
 
-IMAGE_PATH: str = '/home/dhya/Downloads/dataset/mat.jpg'
+IMAGE_PATH: str = '/home/dhya/Downloads/dataset/image_tn.jpeg'
 DEPLOYMENT_URL: str = 'https://inf-cb2925ad-7007-4946-a561-4a8c73f907d6-no4xvrhsfq-uc.a.run.app/detect'
 
 
@@ -78,10 +80,37 @@ class PlateReader:
         # for element in result:
         #     print(element)
         return license_plate
-
+    
+    @staticmethod
+    def find_closest_match(result: str, conf_thres=0.5) -> LicensePlate | None:
+        '''Returns the closest match in LicensePlates if it exists, else None.'''
+        license_plates = LicensePlate.objects.all()
+        print(f'Text detected: {result}')
+        print(f'License plates: {license_plates}')
+        max_score = 0.0
+        max_score_index = -1
+        print('Starting the process...')
+        for index, plate in enumerate(license_plates):
+            print(f'*** Iteration {index + 1}:')
+            plate_text = plate.plate_text
+            print(f' - - Plate text: {plate_text}')
+            score = jaro_winkler(result, plate_text)
+            print(f' - - Score: {score}')
+            if score > max_score:
+                print(' - - (New close match!)')
+                max_score = score
+                print(f' - - Max score: {max_score}')
+                max_score_index = index
+                print(f' - - Max score index: {max_score_index}')
+            print(f' - - Index: {index}')
+        if max_score < conf_thres:
+            return None
+        closest_match = license_plates[max_score_index]
+        print(f'Closest match: {closest_match}')
+        return closest_match
+        
 
 def main():
-    from colorama import Fore, Style
     from time import process_time
     pr = PlateReader()
     # Getting the result from Theos AI
@@ -90,17 +119,17 @@ def main():
     # response = json.dumps(prediction_data_theos_ai)
     # print(response)
     license_plate_theos_ai = prediction_data_theos_ai['text']
-    print(f'License plate returned from Theos AI: {Fore.YELLOW}{license_plate_theos_ai}{Style.RESET_ALL}')
+    print(f'License plate returned from Theos AI: {license_plate_theos_ai}')
     theos_ai_end = process_time()
     theos_ai_time = theos_ai_end - theos_ai_start
-    print(f'Execution time: {Fore.BLUE}{theos_ai_time:.3f}s{Style.RESET_ALL}')
+    print(f'Execution time: {theos_ai_time:.3f}s')
     # Producing the result natively with OpenCV and EasyOCR
     cv_start = process_time()
     license_plate_cv = pr.read()
-    print(f'License plate returned natively with OpenCV and EasyOCR: {Fore.YELLOW}{license_plate_cv}{Style.RESET_ALL}')
+    print(f'License plate returned natively with OpenCV and EasyOCR: {license_plate_cv}')
     cv_end = process_time()
     cv_time = cv_end - cv_start
-    print(f'Execution time: {Fore.BLUE}{cv_time:.3f}s{Style.RESET_ALL}')
+    print(f'Execution time: {cv_time:.3f}s')
 
 
 if __name__ == '__main__':
