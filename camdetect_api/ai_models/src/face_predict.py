@@ -51,10 +51,10 @@ class FaceRecognition:
         self.face_locations = face_recognition.face_locations(rgb_small_image)
         self.face_encodings = face_recognition.face_encodings(rgb_small_image, self.face_locations)
         self.face_names = []
+        name = "Unknown"
         for face_encoding in self.face_encodings:
             # See if the face is a match for the known face(s)
             matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-            name = "Unknown"
 
             # Calculate the shortest distance to face
             face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
@@ -64,4 +64,4 @@ class FaceRecognition:
                 name = self.known_face_names[best_match_index]
 
             self.face_names.append(name)
-            return ', '.join(self.face_names)
+        return ', '.join(self.face_names)

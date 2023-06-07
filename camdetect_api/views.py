@@ -125,15 +125,20 @@ class FacePredictionList(APIView):
             'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
             'result': '',
-            'face': 0
         }
         serializer = FacePredictionSerializer(data=data)
         if serializer.is_valid():
             fr = FaceRecognition()
             result = fr.recognize_from_image(inference_image)
-            matching_face = get_object_or_404(Face, image=f'faces/{result}')
-            serializer.validated_data['face'] = matching_face
-            serializer.validated_data['result'] = matching_face.title
+            print(f'result: {result}')
+            if result in ['Unknown', '']:
+                serializer.validated_data['result'] = 'Unknown'
+                random_face = Face.objects.first()
+                serializer.validated_data['face'] = random_face
+            else:
+                matching_face = get_object_or_404(Face, image=f'faces/{result}')
+                serializer.validated_data['face'] = matching_face
+                serializer.validated_data['result'] = matching_face.title
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -157,7 +162,6 @@ class LicensePlatePredictionList(APIView):
             'inference_image': inference_image,
             'timestamp': request.data.get('timestamp'),
             'result': '',
-            'license_plate': 0
         }
         serializer = LicensePlatePredictionSerializer(data=data)
         if serializer.is_valid():
@@ -167,6 +171,8 @@ class LicensePlatePredictionList(APIView):
             license_plate = 0 if matching_plate == None else matching_plate
             if license_plate == 0:
                 serializer.validated_data['result'] = result
+                random_plate = LicensePlate.objects.first()
+                serializer.validated_data['license_plate'] = random_plate
             else: 
                 new_result = matching_plate.plate_text
                 serializer.validated_data['result'] = new_result
