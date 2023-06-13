@@ -1,10 +1,17 @@
 # from django.shortcuts import render
+import cv2
+from django.http import StreamingHttpResponse, JsonResponse
+from django.views.decorators import gzip
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.encoding import smart_bytes
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
+
+from camdetectserver import settings
 from .models import (
     Face,
     LicensePlate,
@@ -153,7 +160,12 @@ class LicensePlatePredictionList(APIView):
         '''List all the LicensePlatePrediction items for the given requested license plate.'''
         license_plate_predictions = LicensePlatePrediction.objects.all()
         serializer = LicensePlatePredictionSerializer(license_plate_predictions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        encoded_data = []
+        for prediction in serializer.data:
+            encoded_result = smart_bytes(prediction['result'], encoding='utf-8')
+            prediction['result'] = encoded_result
+            encoded_data.append(prediction)
+        return Response(encoded_data, status=status.HTTP_200_OK)
     
     def post(self, request, *args, **kwargs):
         '''Create the LicensePlatePrediction with the given LicensePlatePrediction data.'''
@@ -408,6 +420,9 @@ class FacePredictionDetail(APIView):
                 {'res': 'Object with face_prediction_id does not exist.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        # image = os.path.relpath(face_prediction_instance.inference_image.path, settings.MEDIA_ROOT)
+        # if os.path.exists(image):
+        #     os.remove(image)
         face_prediction_instance.delete()
         return Response(
             {'res': 'Object deleted!'},
@@ -472,3 +487,88 @@ class LicensePlatePredictionDetail(APIView):
             {'res': 'Object deleted!'},
             status=status.HTTP_200_OK
         )
+
+
+# Cameras
+camera_url = None
+# Object Prediction
+
+@csrf_exempt
+def connect_object_camera(request) -> Response:
+    global camera_url
+    '''Returns the object camera URL.'''
+    try:
+        camera_url = request.data.get('camera_url')
+        print(f'Object camera URL: {camera_url}')
+        return Response(
+            {'res': 'Acquired object camera URL successfully'},
+            status=status.HTTP_200_OK,
+        )
+    except:
+        return Response(
+            {'res': 'Invalid URL'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+
+def stream_video_objects():
+    # Replace 'your_ip_webcam_url' with the actual IP webcam URL
+    IP_WEBCAM_URL = 'your_ip_webcam_url'
+    cap = cv2.VideoCapture(IP_WEBCAM_URL)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Perform object detection on the frame
+        processed_frame = perform_object_prediction(frame)
+        # Convert the processed frame to JPEG format for streaming
+        ret, jpeg = cv2.imencode('.jpg', processed_frame)
+        frame_bytes = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
+
+
+@gzip.gzip_page
+def video_stream_objects(request):
+    response = StreamingHttpResponse(stream_video_objects(), content_type='multipart/x-mixed-replace; boundary=frame')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
+def save_detected_object(request):
+    if request.method == 'POST':
+        # Extract and save the detected object information
+        inference_image = request.POST.get('inference_image')
+        timestamp = request.POST.get('timestamp')
+        result = request.POST.get('result')
+        # Save the information to your Django model
+        prediction = ObjectPrediction(
+            inference_image=inference_image,
+            timestamp=timestamp,
+            result=result
+        )
+        prediction.save()
+        return JsonResponse({'message': 'Object prediction saved successfully.'}, status=201)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+def get_detected_objects(request):
+    if request.method == 'GET':
+        # Retrieve the detected objects
+        detected_objects = ObjectPrediction.objects.all()
+
+        # Convert the detected objects to a list of dictionaries
+        objects_list = []
+        for obj in detected_objects:
+            obj_data = {
+                'inference_image': obj.inference_image,
+                'timestamp': obj.timestamp,
+                'result': obj.result,
+            }
+            objects_list.append(obj_data)
+
+        # Return the detected objects as JSON response
+        return JsonResponse(objects_list, safe=False)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)

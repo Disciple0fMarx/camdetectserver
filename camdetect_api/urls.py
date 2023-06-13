@@ -13,8 +13,11 @@ from .views import (
     FacePredictionDetail,
 
     LicensePlatePredictionList,
-    LicensePlatePredictionDetail
+    LicensePlatePredictionDetail,
+
+    connect_object_camera,
 )
+
 
 urlpatterns = [
     path('api/face', FaceList.as_view()),
@@ -30,5 +33,7 @@ urlpatterns = [
     path('api/face-prediction/<int:face_prediction_id>/', FacePredictionDetail.as_view()),
 
     path('api/license-plate-prediction', LicensePlatePredictionList.as_view()),
-    path('api/license-plate-prediction/<int:license_plate_prediction_id>/', LicensePlatePredictionDetail.as_view())
+    path('api/license-plate-prediction/<int:license_plate_prediction_id>/', LicensePlatePredictionDetail.as_view()),
+
+    path('camera/object/', connect_object_camera, name='connect'),
 ]
