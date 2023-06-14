@@ -1,8 +1,14 @@
 # from django.shortcuts import render
 import cv2
+from PIL import Image
+from io import BytesIO
+from sys import getsizeof
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators import gzip
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from django.core.cache import cache
 from django.utils.encoding import smart_bytes
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser
@@ -26,7 +32,7 @@ from .serializers import (
     FacePredictionSerializer,
     LicensePlatePredictionSerializer
 )
-from camdetect_api.ai_models.src.object_predict import perform_object_prediction
+from camdetect_api.ai_models.src.object_predict import perform_object_prediction, perform_object_prediction_video
 from camdetect_api.ai_models.src.face_predict import FaceRecognition
 from camdetect_api.ai_models.src.license_plate_predict import PlateReader
 
@@ -107,7 +113,7 @@ class ObjectPredictionList(APIView):
         }
         serializer = ObjectPredictionSerializer(data=data)
         if serializer.is_valid():   
-            serializer.validated_data['result'] = perform_object_prediction(inference_image)
+            serializer.validated_data['result'] = perform_object_prediction_video(inference_image)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         print(serializer.errors)
@@ -490,44 +496,77 @@ class LicensePlatePredictionDetail(APIView):
 
 
 # Cameras
-camera_url = None
-# Object Prediction
+
+# Object Detection
 
 @csrf_exempt
+@api_view(['POST'])
 def connect_object_camera(request) -> Response:
-    global camera_url
-    '''Returns the object camera URL.'''
+    '''Connects to the object camera via URL.'''
     try:
-        camera_url = request.data.get('camera_url')
+        camera_url = request.POST.get('object_camera_url')
         print(f'Object camera URL: {camera_url}')
+        cache.set('object_camera_url', camera_url)  # Store camera_url in cache
+        cache.set('object_camera_connected', True)
         return Response(
             {'res': 'Acquired object camera URL successfully'},
             status=status.HTTP_200_OK,
         )
-    except:
+    except KeyError:
         return Response(
             {'res': 'Invalid URL'},
             status=status.HTTP_400_BAD_REQUEST,
+        ).render()
+
+
+@csrf_exempt
+@api_view(['POST'])
+def disconnect_object_camera(request) -> Response:
+    '''Disconnects from object camera.'''
+    try:
+        cache.set('object_camera_connected', False)
+        print(f'object_camera_connected: {cache.get("object_camera_connected")}')
+        return Response(
+            {'res': 'Set object_camera_connected to False'},
+            status=status.HTTP_200_OK,
         )
-    
+    except KeyError:
+        return Response(
+            {'res': 'Bad request'},
+            status=status.HTTP_400_BAD_REQUEST,
+        ).render()
+
 
 def stream_video_objects():
     # Replace 'your_ip_webcam_url' with the actual IP webcam URL
-    IP_WEBCAM_URL = 'your_ip_webcam_url'
-    cap = cv2.VideoCapture(IP_WEBCAM_URL)
-    while True:
+    webcam_url = cache.get('object_camera_url')
+    cap = cv2.VideoCapture(webcam_url)
+    while cache.get('object_camera_connected'):
         ret, frame = cap.read()
         if not ret:
             break
         # Perform object detection on the frame
-        processed_frame = perform_object_prediction(frame)
+        result = perform_object_prediction_video(frame)
+        image = Image.fromarray(frame)
+        # Save the inference image temporarily to a BytesIO object
+        image_buffer = BytesIO()
+        image.save(image_buffer, format='JPEG')
+        image_buffer.seek(0)
+        inference_image = InMemoryUploadedFile(image_buffer, 'ImageField', 'inference_image', 'JPEG', getsizeof(image_buffer), None)
+        # Save the predictions in the database
+        prediction_obj = ObjectPrediction.objects.create(
+            inference_image=inference_image,
+            result=result,
+        )
+        prediction_obj.save()
         # Convert the processed frame to JPEG format for streaming
-        ret, jpeg = cv2.imencode('.jpg', processed_frame)
+        ret, jpeg = cv2.imencode('.jpg', frame)
         frame_bytes = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
 
 
+@csrf_exempt
 @gzip.gzip_page
 def video_stream_objects(request):
     response = StreamingHttpResponse(stream_video_objects(), content_type='multipart/x-mixed-replace; boundary=frame')
@@ -537,38 +576,41 @@ def video_stream_objects(request):
     return response
 
 
-def save_detected_object(request):
-    if request.method == 'POST':
-        # Extract and save the detected object information
-        inference_image = request.POST.get('inference_image')
-        timestamp = request.POST.get('timestamp')
-        result = request.POST.get('result')
-        # Save the information to your Django model
-        prediction = ObjectPrediction(
-            inference_image=inference_image,
-            timestamp=timestamp,
-            result=result
+# Face Recognition
+
+@csrf_exempt
+@api_view(['POST'])
+def connect_face_camera(request) -> Response:
+    '''Connects to the face camera via URL.'''
+    try:
+        camera_url = request.POST.get('face_camera_url')
+        print(f'Face camera URL: {camera_url}')
+        cache.set('face_camera_url', camera_url)  # Store camera_url in cache
+        cache.set('face_camera_connected', True)
+        return Response(
+            {'res': 'Acquired face camera URL successfully'},
+            status=status.HTTP_200_OK,
         )
-        prediction.save()
-        return JsonResponse({'message': 'Object prediction saved successfully.'}, status=201)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    except KeyError:
+        return Response(
+            {'res': 'Invalid URL'},
+            status=status.HTTP_400_BAD_REQUEST,
+        ).render()
+    
 
-
-def get_detected_objects(request):
-    if request.method == 'GET':
-        # Retrieve the detected objects
-        detected_objects = ObjectPrediction.objects.all()
-
-        # Convert the detected objects to a list of dictionaries
-        objects_list = []
-        for obj in detected_objects:
-            obj_data = {
-                'inference_image': obj.inference_image,
-                'timestamp': obj.timestamp,
-                'result': obj.result,
-            }
-            objects_list.append(obj_data)
-
-        # Return the detected objects as JSON response
-        return JsonResponse(objects_list, safe=False)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+@csrf_exempt
+@api_view(['POST'])
+def disconnect_face_camera(request) -> Response:
+    '''Disconnects from face camera.'''
+    try:
+        cache.set('face_camera_connected', False)
+        print(f'face_camera_connected: {cache.get("face_camera_connected")}')
+        return Response(
+            {'res': 'Set face_camera_connected to False'},
+            status=status.HTTP_200_OK,
+        )
+    except KeyError:
+        return Response(
+            {'res': 'Bad request'},
+            status=status.HTTP_400_BAD_REQUEST,
+        ).render()

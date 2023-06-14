@@ -16,6 +16,10 @@ from .views import (
     LicensePlatePredictionDetail,
 
     connect_object_camera,
+    disconnect_object_camera,
+    video_stream_objects,
+
+    connect_face_camera,
 )
 
 
@@ -35,5 +39,10 @@ urlpatterns = [
     path('api/license-plate-prediction', LicensePlatePredictionList.as_view()),
     path('api/license-plate-prediction/<int:license_plate_prediction_id>/', LicensePlatePredictionDetail.as_view()),
 
-    path('camera/object/', connect_object_camera, name='connect'),
+    path('camera/object/connect', connect_object_camera, name='connect_object_camera'),
+    path('camera/object/disconnect', disconnect_object_camera, name='disconnect_object_camera'),
+    path('camera/object/video-stream', video_stream_objects, name='video_stream_objects'),
+
+    path('camera/face/connect', connect_face_camera, name='connect_face_camera'),
+
 ]
