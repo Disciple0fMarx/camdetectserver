@@ -538,7 +538,6 @@ def disconnect_object_camera(request) -> Response:
 
 
 def stream_video_objects():
-    # Replace 'your_ip_webcam_url' with the actual IP webcam URL
     webcam_url = cache.get('object_camera_url')
     cap = cv2.VideoCapture(webcam_url)
     while cache.get('object_camera_connected'):
@@ -614,3 +613,51 @@ def disconnect_face_camera(request) -> Response:
             {'res': 'Bad request'},
             status=status.HTTP_400_BAD_REQUEST,
         ).render()
+
+
+def stream_video_faces():
+    webcam_url = cache.get('face_camera_url')
+    cap = cv2.VideoCapture(webcam_url)
+    fr = FaceRecognition()
+    while cache.get('face_camera_connected'):
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Perform object detection on the frame
+        result = fr.recognize_from_frame(frame)
+        image = Image.fromarray(frame)
+        # Save the inference image temporarily to a BytesIO object
+        image_buffer = BytesIO()
+        image.save(image_buffer, format='JPEG')
+        image_buffer.seek(0)
+        inference_image = InMemoryUploadedFile(image_buffer, 'ImageField', 'inference_image', 'JPEG', getsizeof(image_buffer), None)
+        # Save the predictions in the database
+        if result in ['Unknown', '']:
+            prediction_obj = FacePrediction.objects.create(
+            inference_image=inference_image,
+            result='Unknown',
+            face=Face.objects.first()
+        )
+        else:
+            matching_face = get_object_or_404(Face, image=f'faces/{result}')
+            prediction_obj = FacePrediction.objects.create(
+                inference_image=inference_image,
+                result=matching_face.title,
+                face=matching_face,
+            )
+        prediction_obj.save()
+        # Convert the processed frame to JPEG format for streaming
+        ret, jpeg = cv2.imencode('.jpg', frame)
+        frame_bytes = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
+
+
+@csrf_exempt
+@gzip.gzip_page
+def video_stream_faces(request):
+    response = StreamingHttpResponse(stream_video_faces(), content_type='multipart/x-mixed-replace; boundary=frame')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response

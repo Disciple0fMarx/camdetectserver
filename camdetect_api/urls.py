@@ -20,6 +20,8 @@ from .views import (
     video_stream_objects,
 
     connect_face_camera,
+    disconnect_face_camera,
+    video_stream_faces,
 )
 
 
@@ -44,5 +46,7 @@ urlpatterns = [
     path('camera/object/video-stream', video_stream_objects, name='video_stream_objects'),
 
     path('camera/face/connect', connect_face_camera, name='connect_face_camera'),
+    path('camera/face/disconnect', disconnect_face_camera, name='disconnect_face_camera'),
+    path('camera/face/video-stream', video_stream_faces, name='video_stream_faces'),
 
 ]
