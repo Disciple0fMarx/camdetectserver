@@ -661,3 +661,90 @@ def video_stream_faces(request):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
+
+
+@csrf_exempt
+@api_view(['POST'])
+def connect_plate_camera(request) -> Response:
+    '''Connects to the license plate camera via URL.'''
+    try:
+        camera_url = request.POST.get('plate_camera_url')
+        print(f'Plate camera URL: {camera_url}')
+        cache.set('plate_camera_url', camera_url)  # Store camera_url in cache
+        cache.set('plate_camera_connected', True)
+        return Response(
+            {'res': 'Acquired plate camera URL successfully'},
+            status=status.HTTP_200_OK,
+        )
+    except KeyError:
+        return Response(
+            {'res': 'Invalid URL'},
+            status=status.HTTP_400_BAD_REQUEST,
+        ).render()
+
+
+@csrf_exempt
+@api_view(['POST'])
+def disconnect_plate_camera(request) -> Response:
+    '''Disconnects from license plate camera.'''
+    try:
+        cache.set('plate_camera_connected', False)
+        print(f'plate_camera_connected: {cache.get("plate_camera_connected")}')
+        return Response(
+            {'res': 'Set plate_camera_connected to False'},
+            status=status.HTTP_200_OK,
+        )
+    except KeyError:
+        return Response(
+            {'res': 'Bad request'},
+            status=status.HTTP_400_BAD_REQUEST,
+        ).render()
+
+
+def stream_video_plates():
+    webcam_url = cache.get('plate_camera_url')
+    cap = cv2.VideoCapture(webcam_url)
+    while cache.get('plate_camera_connected'):
+        pr = PlateReader(frame)
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Perform object detection on the frame
+        result = pr.read_frame(frame)
+        image = Image.fromarray(frame)
+        # Save the inference image temporarily to a BytesIO object
+        image_buffer = BytesIO()
+        image.save(image_buffer, format='JPEG')
+        image_buffer.seek(0)
+        inference_image = InMemoryUploadedFile(image_buffer, 'ImageField', 'inference_image', 'JPEG', getsizeof(image_buffer), None)
+        # Save the predictions in the database
+        matching_plate = pr.find_closest_match(result)
+        license_plate = 0 if matching_plate == None else matching_plate
+        if license_plate == 0:
+            prediction_obj = LicensePlatePrediction.objects.create(
+                inference_image=inference_image,
+                result=result,
+                license_plate=LicensePlate.objects.first()
+            )
+        else:
+            prediction_obj = LicensePlatePrediction.objects.create(
+                inference_image=inference_image,
+                result=matching_plate.plate_text,
+                license_plate=matching_plate,
+            )
+        prediction_obj.save()
+        # Convert the processed frame to JPEG format for streaming
+        ret, jpeg = cv2.imencode('.jpg', frame)
+        frame_bytes = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
+
+
+@csrf_exempt
+@gzip.gzip_page
+def video_stream_plates(request):
+    response = StreamingHttpResponse(stream_video_plates(), content_type='multipart/x-mixed-replace; boundary=frame')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
