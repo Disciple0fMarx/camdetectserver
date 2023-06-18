@@ -81,8 +81,9 @@ class PlateReader:
         #     print(element)
         return license_plate
     
-    def read_frame(self):
-        new_image = Image.fromarray(self.image_path)
+    @staticmethod
+    def read_frame(frame):
+        new_image = Image.fromarray(frame)
         image_array = np.asarray(new_image)
         gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
         bfilter = cv2.bilateralFilter(gray, 11, 17, 17)  # Noise reduction

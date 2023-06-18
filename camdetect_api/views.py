@@ -586,6 +586,7 @@ def connect_face_camera(request) -> Response:
         print(f'Face camera URL: {camera_url}')
         cache.set('face_camera_url', camera_url)  # Store camera_url in cache
         cache.set('face_camera_connected', True)
+        print(f'face_camera_connected: {cache.get("face_camera_connected")}')
         return Response(
             {'res': 'Acquired face camera URL successfully'},
             status=status.HTTP_200_OK,
@@ -704,8 +705,8 @@ def disconnect_plate_camera(request) -> Response:
 def stream_video_plates():
     webcam_url = cache.get('plate_camera_url')
     cap = cv2.VideoCapture(webcam_url)
+    pr = PlateReader('')
     while cache.get('plate_camera_connected'):
-        pr = PlateReader(frame)
         ret, frame = cap.read()
         if not ret:
             break
